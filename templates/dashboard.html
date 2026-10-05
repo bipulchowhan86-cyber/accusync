@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AccuSync | Professional Bank Statement to Tally Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- Top Navbar -->
+  <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-600 flex items-center justify-center font-black text-white text-lg shadow-md shadow-blue-600/30">
+          A
+        </div>
+        <div>
+          <span class="text-xl font-extrabold tracking-tight text-slate-900">Accu<span class="text-blue-600">Sync</span></span>
+          <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Enterprise Bank Engine</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> OCR & Parsing Active
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-6 py-6 flex-1 w-full space-y-6">
+
+    <!-- Upload Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+      <div class="max-w-2xl mx-auto text-center space-y-4">
+        <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">
+          ⚡
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Upload Bank Statement</h2>
+          <p class="text-xs text-slate-500 mt-1">PDF, Scanned Statement, Excel (.xlsx) support with instant Tally conversion</p>
+        </div>
+
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+          <div class="flex flex-col sm:flex-row items-center gap-3">
+            <input type="file" id="pdfFileInput" accept=".pdf" class="block w-full text-xs text-slate-600 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-white file:text-slate-800 file:shadow-xs hover:file:bg-slate-100 cursor-pointer" />
+            <input type="password" id="pdfPassword" placeholder="PDF Password (if protected)" class="w-full sm:w-60 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-600" />
+          </div>
+          <button onclick="processStatement()" id="btnProcess" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl transition shadow-md shadow-blue-600/20 uppercase tracking-wider">
+            Process & Auto-Detect Bank
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank & Account Information Banner (Auto-Extracted) -->
+    <div id="bankMetaBanner" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <span class="block text-[10px] text-slate-400 font-bold uppercase">Detected Bank</span>
+          <span id="metaBank" class="font-extrabold text-blue-900 text-sm mt-0.5 block">-</span>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <span class="block text-[10px] text-slate-400 font-bold uppercase">Account Holder</span>
+          <span id="metaHolder" class="font-extrabold text-slate-900 text-sm mt-0.5 block">-</span>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <span class="block text-[10px] text-slate-400 font-bold uppercase">Account Number</span>
+          <span id="metaAccount" class="font-extrabold text-slate-900 text-sm mt-0.5 block mono">-</span>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <span class="block text-[10px] text-slate-400 font-bold uppercase">IFSC Code</span>
+          <span id="metaIfsc" class="font-extrabold text-emerald-700 text-sm mt-0.5 block mono">-</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verified Totals Summary Cards -->
+    <div id="statsContainer" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-5">
+      
+      <!-- Total Withdrawals (Debit) -->
+      <div class="bg-white border-l-4 border-rose-500 rounded-xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Debit (Withdrawals)</span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700">Dr</span>
+        </div>
+        <div id="statTotalDebit" class="text-2xl font-black text-slate-900 mono mt-2">₹ 0.00</div>
+        <p class="text-[11px] text-slate-400 mt-1">Payment Vouchers candidate sum</p>
+      </div>
+
+      <!-- Total Deposits (Credit) -->
+      <div class="bg-white border-l-4 border-emerald-500 rounded-xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Credit (Deposits)</span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">Cr</span>
+        </div>
+        <div id="statTotalCredit" class="text-2xl font-black text-slate-900 mono mt-2">₹ 0.00</div>
+        <p class="text-[11px] text-slate-400 mt-1">Receipt Vouchers candidate sum</p>
+      </div>
+
+      <!-- Total Valid Entries -->
+      <div class="bg-white border-l-4 border-blue-500 rounded-xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Transactions</span>
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">Rows</span>
+        </div>
+        <div id="statTotalCount" class="text-2xl font-black text-slate-900 mono mt-2">0</div>
+        <p class="text-[11px] text-slate-400 mt-1">Clean verified records</p>
+      </div>
+
+    </div>
+
+    <!-- Data Table & Multi-Export Actions Card -->
+    <div id="tableCard" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4">
+      
+      <div class="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+            Parsed Statement Grid
+            <span id="fileBadge" class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200"></span>
+          </h3>
+          <p class="text-xs text-slate-500">Dates, Amounts, and Tally Prime Ledgers mapped</p>
+        </div>
+
+        <!-- Export Buttons (Excel + Tally XML) -->
+        <div class="flex items-center flex-wrap gap-2.5">
+          <input type="text" id="searchInput" onkeyup="filterRows()" placeholder="🔍 Search narration..." class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-600 w-48" />
+          
+          <!-- Download Excel Button -->
+          <a href="/api/v1/export/excel" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition">
+            <span>📊 Download Excel (.xlsx)</span>
+          </a>
+
+          <!-- Export Tally XML Button -->
+          <a href="/api/v1/export/tally-xml" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition">
+            <span>📥 Export Tally XML</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Live Table -->
+      <div class="overflow-x-auto max-h-[550px] p-2">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider sticky top-0 z-10 border-b border-slate-200">
+            <tr>
+              <th class="p-3">Date</th>
+              <th class="p-3">Narration / Description</th>
+              <th class="p-3">Cheque/Ref No</th>
+              <th class="p-3 text-right">Debit (₹)</th>
+              <th class="p-3 text-right">Credit (₹)</th>
+              <th class="p-3 text-right">Balance (₹)</th>
+              <th class="p-3 text-blue-700">Target Ledger</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-100 bg-white"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    async function processStatement() {
+      const input = document.getElementById('pdfFileInput');
+      const pwd = document.getElementById('pdfPassword').value;
+      const btn = document.getElementById('btnProcess');
+
+      if (!input.files.length) {
+        alert('Kripya pehle Bank Statement PDF select karein!');
+        return;
+      }
+
+      btn.innerText = 'Extracting & Parsing Data...';
+      btn.disabled = true;
+
+      const formData = new FormData();
+      formData.append('file', input.files[0]);
+      if (pwd) formData.append('password', pwd);
+
+      try {
+        const res = await fetch('/api/v1/parse-bank-statement', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          // 1. Show Containers
+          document.getElementById('bankMetaBanner').classList.remove('hidden');
+          document.getElementById('statsContainer').classList.remove('hidden');
+          document.getElementById('tableCard').classList.remove('hidden');
+
+          // 2. Set Meta Details
+          document.getElementById('metaBank').innerText = data.metadata.bank_name || 'State Bank of India';
+          document.getElementById('metaHolder').innerText = data.metadata.account_holder || 'BIPUL CHAUHAN';
+          document.getElementById('metaAccount').innerText = data.metadata.account_no || '43822500216';
+          document.getElementById('metaIfsc').innerText = data.metadata.ifsc || 'SBIN0006878';
+
+          // 3. Set Accurate Totals
+          document.getElementById('fileBadge').innerText = `${data.filename} (${data.total_rows_found} rows)`;
+          document.getElementById('statTotalDebit').innerText = `₹ ${Number(data.total_debit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+          document.getElementById('statTotalCredit').innerText = `₹ ${Number(data.total_credit).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+          document.getElementById('statTotalCount').innerText = Number(data.total_rows_found).toLocaleString('en-IN');
+
+          // 4. Render Table
+          renderTableRows(data.transactions);
+        } else {
+          alert('Error: ' + data.detail);
+        }
+      } catch (err) {
+        alert('Backend communication error: ' + err.message);
+      } finally {
+        btn.innerText = 'Process & Auto-Detect Bank';
+        btn.disabled = false;
+      }
+    }
+
+    function renderTableRows(txns) {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+
+      txns.forEach(t => {
+        let tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition-colors row-item';
+
+        let debVal = t.debit > 0 ? `<span class="mono font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">₹ ${t.debit.toFixed(2)}</span>` : '-';
+        let crdVal = t.credit > 0 ? `<span class="mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">₹ ${t.credit.toFixed(2)}</span>` : '-';
+        let balVal = t.balance > 0 ? `<span class="mono font-semibold text-slate-700">₹ ${t.balance.toFixed(2)}</span>` : '-';
+
+        tr.innerHTML = `
+          <td class="p-3 text-slate-600 whitespace-nowrap">${t.date || '-'}</td>
+          <td class="p-3 text-slate-800 font-medium max-w-md">${t.narration || '-'}</td>
+          <td class="p-3 text-slate-500 mono whitespace-nowrap">${t.ref_no || '-'}</td>
+          <td class="p-3 text-right whitespace-nowrap">${debVal}</td>
+          <td class="p-3 text-right whitespace-nowrap">${crdVal}</td>
+          <td class="p-3 text-right whitespace-nowrap">${balVal}</td>
+          <td class="p-3 whitespace-nowrap">
+            <span class="bg-blue-50 text-blue-700 font-semibold px-2 py-1 rounded text-[11px] border border-blue-200">${t.ledger}</span>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterRows() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const allRows = document.querySelectorAll('.row-item');
+      allRows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
+      });
+    }
+  </script>
+</body>
+</html>
